@@ -1,0 +1,40 @@
+#!/bin/sh
+
+#Author: Josh
+#Original Date: 1/13/2020
+#Last Revision: 1/13/2020
+
+#Clears previous firewall rules
+sudo iptables -F
+
+export SERVER1="192.168.4.2"
+export TECHSUPPORT1="192.168.4.5"
+export UPDATESERVER="192.168.4.7"
+
+#Lists current firewall rules to a file
+sudo iptables-save > initialstate.log
+
+#Accepts input and output from loopback interface
+sudo iptables -A INPUT -s 127.0.0.0/8 -j ACCEPT
+sudo iptables -A OUTPUT -s 127.0.0.0/8 -j ACCEPT
+
+#Makes firewall statefull and allows incoming traffic from all established and realated connections
+sudo iptables -I INPUT 1 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+#Allows incoming SSH traffic from TECHSUPPORT1
+sudo iptables -A INPUT -p tcp --sport 22 -j ACCEPT -s $TECHSUPPORT1
+
+#Allows outgoing FTP traffic from UPDATESERVER
+sudo iptables -A OUTPUT -p tcp --dport 21 -j ACCEPT -s $UPDATESERVER
+sudo iptables -A OUTPUT -p tcp --dport 20 -j ACCEPT -s $UPDATESERVER
+
+#Changes default rules to drop for INPUT, OUTPUT, and FORWARD
+sudo iptables -A OUTPUT -j DROP
+sudo iptables -A INPUT -j DROP
+sudo iptables -A FORWARD -j DROP
+
+#Save firewall rules
+sudo iptables-save
+
+#Outputs firewall rules to a file
+sudo iptables-save > configuredstate.log
